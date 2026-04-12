@@ -1,6 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
-import { LangProvider } from './context/Langcontext.jsx'
+import { LangProvider } from './context/LangContext.jsx'
 
 import AIAdvisoryPage from './pages/AIAdvisoryPage.jsx'
 import CalendarPage from './pages/CalendarPage.jsx'
