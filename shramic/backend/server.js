@@ -453,8 +453,89 @@ app.get("/api/market-prices", auth(), async (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  PAYMENTS
+//  AI WAGE SUGGESTION — Smart formula based on job type, location, season
 // ══════════════════════════════════════════════════════════════════════════════
+app.post("/api/ai/wage-suggest", auth(), async (req, res) => {
+  const { job_type, state, season, workers_needed = 1 } = req.body;
+
+  // Base wages per job type (₹/day) — sourced from MGNREGA + market rates
+  const BASE = {
+    sowing:      450, harvesting:  650, irrigation:  400,
+    spraying:    550, ploughing:   700, transplanting: 500,
+    weeding:     400, other:       450,
+  };
+
+  // State multipliers (cost of living adjustment)
+  const STATE_MUL = {
+    'Punjab': 1.35, 'Haryana': 1.30, 'Maharashtra': 1.25, 'Gujarat': 1.20,
+    'Karnataka': 1.15, 'Tamil Nadu': 1.15, 'Andhra Pradesh': 1.10,
+    'Telangana': 1.10, 'Kerala': 1.40, 'West Bengal': 1.0,
+    'Uttar Pradesh': 0.95, 'Bihar': 0.90, 'Madhya Pradesh': 0.95,
+    'Rajasthan': 1.0, 'Odisha': 0.90, 'Chhattisgarh': 0.90,
+    'Jharkhand': 0.90, 'Assam': 0.95, 'Himachal Pradesh': 1.20,
+  };
+
+  // Season multiplier — peak seasons command higher wages
+  const SEASON_MUL = {
+    Kharif: 1.15, Rabi: 1.10, harvest: 1.25, Summer: 0.95,
+    'Whole Year': 1.0,
+  };
+
+  const base       = BASE[job_type] || BASE.other;
+  const stateMul   = STATE_MUL[state] || 1.0;
+  const seasonMul  = SEASON_MUL[season] || 1.0;
+  const groupDisc  = workers_needed >= 5 ? 0.92 : workers_needed >= 3 ? 0.96 : 1.0;
+
+  const suggested  = Math.round(base * stateMul * seasonMul * groupDisc / 50) * 50; // round to ₹50
+  const low        = Math.round(suggested * 0.85 / 50) * 50;
+  const high       = Math.round(suggested * 1.15 / 50) * 50;
+
+  res.json({
+    suggested_wage: suggested,
+    range: { low, high },
+    breakdown: {
+      base_wage:     base,
+      state_factor:  stateMul,
+      season_factor: seasonMul,
+      group_discount: workers_needed >= 3 ? `${Math.round((1-groupDisc)*100)}% group discount` : null,
+    },
+    note: `Based on MGNREGA rates + market data for ${state}. Adjust based on skill level.`,
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  WORKER TRACKING — Get all available workers with coords
+// ══════════════════════════════════════════════════════════════════════════════
+app.get("/api/workers/tracking", auth(["farmer","admin"]), async (req, res) => {
+  const [rows] = await db.query(
+    `SELECT u.id,u.name,u.phone,wp.lat,wp.lng,wp.is_available,wp.skills,wp.rating,wp.daily_wage
+     FROM worker_profiles wp JOIN users u ON wp.user_id=u.id
+     WHERE wp.is_available=1 AND wp.lat IS NOT NULL AND wp.lng IS NOT NULL`
+  );
+  res.json(rows);
+});
+
+// Worker updates own location (called from mobile/browser)
+app.patch("/api/workers/location", auth(["worker"]), async (req, res) => {
+  const { lat, lng } = req.body;
+  await db.query("UPDATE worker_profiles SET lat=?,lng=? WHERE user_id=?", [lat, lng, req.user.id]);
+  io.emit("worker_location_update", { worker_id: req.user.id, name: req.user.name, lat, lng });
+  res.json({ message: "Location updated" });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  USER PROFILE UPDATE
+// ══════════════════════════════════════════════════════════════════════════════
+app.put("/api/auth/profile", auth(), async (req, res) => {
+  const { name, phone, location, state } = req.body;
+  await db.query(
+    "UPDATE users SET name=?,phone=?,location=?,state=? WHERE id=?",
+    [name, phone, location, state, req.user.id]
+  );
+  res.json({ message: "Profile updated" });
+});
+
+
 app.get("/api/payments/my", auth(), async (req, res) => {
   const [rows] = await db.query(
     "SELECT p.*,u.name AS receiver_name FROM payments p LEFT JOIN users u ON p.receiver_id=u.id WHERE p.payer_id=? ORDER BY p.created_at DESC",

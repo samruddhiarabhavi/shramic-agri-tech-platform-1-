@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import api from '../api.js'
 import Layout from '../components/Layout.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
+import { useLang } from '../context/Langcontext.jsx'
 
 // ─────────────────────────────────────────────────────────────
 //  EQUIPMENT BOOKING
@@ -375,22 +376,20 @@ export function CalendarPage() {
 // ─────────────────────────────────────────────────────────────
 export function SchemesPage() {
   const [schemes, setSchemes] = useState([])
+  const { t } = useLang()
   useEffect(()=>{ api.get('/schemes').then(r=>setSchemes(r.data)) },[])
-
   return (
-    <Layout title="🏛️ Government Schemes & Subsidies">
+    <Layout>
+      <h1 className="font-display text-2xl font-bold text-gray-900 mb-6">🏛️ {t('schemes')}</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {schemes.map(s=>(
-          <div key={s.id} className="card border-l-4 border-primary hover:shadow-md transition-all">
+          <div key={s.id} className="card border-l-4 border-green-600 hover:shadow-md transition-all">
             <div className="font-display font-bold text-gray-900 mb-1">{s.name}</div>
             <div className="text-xs text-gray-400 mb-2">{s.ministry}</div>
             <p className="text-sm text-gray-600 mb-3">{s.description}</p>
             <div className="flex items-center justify-between">
               <span className="badge bg-green-100 text-green-700">💰 {s.benefit}</span>
-              {s.link && (
-                <a href={s.link} target="_blank" rel="noreferrer"
-                  className="text-xs text-primary hover:underline font-semibold">Apply →</a>
-              )}
+              {s.link&&<a href={s.link} target="_blank" rel="noreferrer" className="text-xs text-green-700 hover:underline font-semibold">{t('apply')}</a>}
             </div>
           </div>
         ))}
