@@ -18,9 +18,16 @@ import SchemesPage from './pages/SchemesPage.jsx'
 import TrackingPage from './pages/TrackingPage.jsx'
 import WorkersPage from './pages/WorkersPage.jsx'
 
+// 🔐 Protected Route
 function ProtectedRoute({ children }) {
   const { isAuth } = useAuth()
-  return isAuth ? children : <Navigate to="/login" replace />
+
+  // If not logged in → go to login
+  if (!isAuth) {
+    return <Navigate to="/login" replace />
+  }
+
+  return children
 }
 
 export default function App() {
@@ -29,22 +36,29 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/login"      element={<LoginPage />} />
-            <Route path="/register"   element={<RegisterPage />} />
-            <Route path="/"           element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/jobs"       element={<ProtectedRoute><JobsPage /></ProtectedRoute>} />
-            <Route path="/workers"    element={<ProtectedRoute><WorkersPage /></ProtectedRoute>} />
-            <Route path="/tracking"   element={<ProtectedRoute><TrackingPage /></ProtectedRoute>} />
-            <Route path="/equipment"  element={<ProtectedRoute><EquipmentPage /></ProtectedRoute>} />
+
+            {/* Public Routes */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+
+            {/* Protected Routes */}
+            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/jobs" element={<ProtectedRoute><JobsPage /></ProtectedRoute>} />
+            <Route path="/workers" element={<ProtectedRoute><WorkersPage /></ProtectedRoute>} />
+            <Route path="/tracking" element={<ProtectedRoute><TrackingPage /></ProtectedRoute>} />
+            <Route path="/equipment" element={<ProtectedRoute><EquipmentPage /></ProtectedRoute>} />
             <Route path="/marketplace" element={<ProtectedRoute><MarketplacePage /></ProtectedRoute>} />
-            <Route path="/ai"         element={<ProtectedRoute><AIAdvisoryPage /></ProtectedRoute>} />
-            <Route path="/calendar"   element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
-            <Route path="/schemes"    element={<ProtectedRoute><SchemesPage /></ProtectedRoute>} />
-            <Route path="/prices"     element={<ProtectedRoute><MarketPricePage /></ProtectedRoute>} />
-            <Route path="/community"  element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
-            <Route path="/payments"   element={<ProtectedRoute><PaymentsPage /></ProtectedRoute>} />
-            <Route path="/profile"    element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-            <Route path="*"           element={<Navigate to="/" />} />
+            <Route path="/ai" element={<ProtectedRoute><AIAdvisoryPage /></ProtectedRoute>} />
+            <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
+            <Route path="/schemes" element={<ProtectedRoute><SchemesPage /></ProtectedRoute>} />
+            <Route path="/prices" element={<ProtectedRoute><MarketPricePage /></ProtectedRoute>} />
+            <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
+            <Route path="/payments" element={<ProtectedRoute><PaymentsPage /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+
+            {/* Catch-all (fallback) */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+
           </Routes>
         </BrowserRouter>
       </AuthProvider>
