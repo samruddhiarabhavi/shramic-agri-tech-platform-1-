@@ -98,7 +98,7 @@ function WorkerLocationSharer() {
       setStatus('Geolocation not supported on this device')
       return
     }
-    socketRef.current = io('http://localhost:4000')
+    socketRef.current = io(import.meta.env.VITE_API_URL || 'http://localhost:4000')
     setSharing(true)
     setStatus('📍 Sharing location…')
 
@@ -162,7 +162,7 @@ export default function TrackingPage() {
   useEffect(() => {
     load()
     // Connect socket for real-time updates
-    socketRef.current = io('http://localhost:4000')
+    socketRef.current = io(import.meta.env.VITE_API_URL || 'http://localhost:4000')
     socketRef.current.on('worker_availability_update', () => load())
     socketRef.current.on('worker_location_update', () => load())
     return () => socketRef.current?.disconnect()
